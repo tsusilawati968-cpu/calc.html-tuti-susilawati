@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulator Saintifik - Tuti Susilawati</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#1b1f2a;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:12px}
+  .calc{width:100%;max-width:380px;background:#252a38;border-radius:22px;padding:16px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+  .screen{background:#c8d8c0;color:#1d2b1d;border-radius:12px;padding:10px 14px;margin-bottom:14px;text-align:right;box-shadow:inset 0 3px 8px rgba(0,0,0,.3);min-height:96px;display:flex;flex-direction:column;justify-content:space-between}
+  .mode{font-size:.72rem;display:flex;justify-content:space-between;opacity:.7;font-weight:600}
+  .expr{font-size:1rem;min-height:24px;word-break:break-all;overflow:hidden;font-family:'Courier New',monospace}
+  .result{font-size:2.1rem;font-weight:700;font-family:'Courier New',monospace;overflow-x:auto;white-space:nowrap}
+  .keys{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  button{border:none;border-radius:10px;padding:13px 0;font-size:1rem;font-weight:600;cursor:pointer;color:#fff;background:#3a4155;transition:transform .08s,filter .15s}
+  button:active{transform:scale(.93)}
+  button:hover{filter:brightness(1.2)}
+  .sci{background:#2f3a52;font-size:.85rem;color:#a9c4ff}
+  .num{background:#454d66}
+  .op{background:#f0883e}
+  .fn{background:#d9534f}
+  .eq{background:#2e9e5b}
+  .wide{grid-column:span 2}
+  .foot{text-align:center;color:#8a93aa;font-size:.7rem;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="calc">
+  <div class="screen">
+    <div class="mode"><span id="angle">DEG</span><span>Tuti Susilawati</span></div>
+    <div class="expr" id="expr"></div>
+    <div class="result" id="result">0</div>
+  </div>
+  <div class="keys">
+    <button class="sci" data-i="sin(">sin</button>
+    <button class="sci" data-i="cos(">cos</button>
+    <button class="sci" data-i="tan(">tan</button>
+    <button class="sci" data-i="log(">log</button>
+    <button class="sci" data-i="ln(">ln</button>
+
+    <button class="sci" data-i="asin(">sin⁻¹</button>
+    <button class="sci" data-i="acos(">cos⁻¹</button>
+    <button class="sci" data-i="atan(">tan⁻¹</button>
+    <button class="sci" data-i="sqrt(">√</button>
+    <button class="sci" id="deg">DEG/RAD</button>
+
+    <button class="sci" data-i="π">π</button>
+    <button class="sci" data-i="e">e</button>
+    <button class="sci" data-i="^2">x²</button>
+    <button class="sci" data-i="^">xʸ</button>
+    <button class="sci" data-i="!">n!</button>
+
+    <button class="sci" data-i="(">(</button>
+    <button class="sci" data-i=")">)</button>
+    <button class="sci" data-i="%">%</button>
+    <button class="sci" data-i="Ans">Ans</button>
+    <button class="fn" id="del">DEL</button>
+
+    <button class="num" data-i="7">7</button>
+    <button class="num" data-i="8">8</button>
+    <button class="num" data-i="9">9</button>
+    <button class="op" data-i="÷">÷</button>
+    <button class="fn" id="ac">AC</button>
+
+    <button class="num" data-i="4">4</button>
+    <button class="num" data-i="5">5</button>
+    <button class="num" data-i="6">6</button>
+    <button class="op" data-i="×">×</button>
+    <button class="op" data-i="−">−</button>
+
+    <button class="num" data-i="1">1</button>
+    <button class="num" data-i="2">2</button>
+    <button class="num" data-i="3">3</button>
+    <button class="op" data-i="+">+</button>
+    <button class="eq" id="eq" style="grid-row:span 2">=</button>
+
+    <button class="num wide" data-i="0">0</button>
+    <button class="num" data-i=".">.</button>
+    <button class="op" id="neg">±</button>
+  </div>
+  <div class="foot">Kalkulator Saintifik • UTS Logika Algoritma</div>
+</div>
+
+<script>
+const exprEl=document.getElementById('expr'), resEl=document.getElementById('result');
+let expr='', ans=0, deg=true, justEval=false;
+
+function render(){ exprEl.textContent=expr; }
+
+function insert(t){
+  if(justEval){
+    if(/^[+×÷−^!%]/.test(t)) expr='Ans'; else expr='';
+    justEval=false;
+  }
+  expr+=t; render();
+}
+
+function tokenize(s){
+  const m=s.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').match(/\d+\.?\d*|\.\d+|[a-zA-Zπ]+|[+\-*\/^()!%]/g);
+  if(!m || m.join('').length!==s.replace(/\s/g,'').length) throw new Error('Input tidak valid');
+  return m;
+}
+function fact(n){
+  if(n<0||!Number.isInteger(n)) throw new Error('Faktorial tidak valid');
+  if(n>170) return Infinity;
+  let r=1; for(let i=2;i<=n;i++) r*=i; return r;
+}
+const FN={
+  sin:x=>Math.sin(deg?x*Math.PI/180:x),
+  cos:x=>Math.cos(deg?x*Math.PI/180:x),
+  tan:x=>Math.tan(deg?x*Math.PI/180:x),
+  asin:x=>{const r=Math.asin(x);return deg?r*180/Math.PI:r},
+  acos:x=>{const r=Math.acos(x);return deg?r*180/Math.PI:r},
+  atan:x=>{const r=Math.atan(x);return deg?r*180/Math.PI:r},
+  log:Math.log10, ln:Math.log, sqrt:Math.sqrt
+};
+function evaluate(s){
+  const open=(s.match(/\(/g)||[]).length, close=(s.match(/\)/g)||[]).length;
+  s+=')'.repeat(Math.max(0,open-close));
+  const t=tokenize(s); let p=0;
+  const peek=()=>t[p], next=()=>t[p++];
+  const startsValue=x=>x!==undefined&&(/^[\d.]/.test(x)||x==='('||/^[a-zA-Zπ]/.test(x));
+  function expression(){
+    let v=term();
+    while(peek()==='+'||peek()==='-'){ const o=next(); const r=term(); v=o==='+'?v+r:v-r; }
+    return v;
+  }
+  function term(){
+    let v=unary();
+    while(peek()==='*'||peek()==='/'||startsValue(peek())){
+      if(peek()==='*'){next();v*=unary();}
+      else if(peek()==='/'){next();const r=unary(); if(r===0) throw new Error('Tidak bisa dibagi 0'); v/=r;}
+      else v*=unary();
+    }
+    return v;
+  }
+  function unary(){
+    if(peek()==='-'){next();return -unary();}
+    if(peek()==='+'){next();return unary();}
+    return power();
+  }
+  function power(){
+    let b=postfix();
+    if(peek()==='^'){next(); return Math.pow(b,unary());}
+    return b;
+  }
+  function postfix(){
+    let v=primary();
+    while(peek()==='!'||peek()==='%'){ const o=next(); v=o==='!'?fact(v):v/100; }
+    return v;
+  }
+  function primary(){
+    const x=next();
+    if(x===undefined) throw new Error('Ekspresi belum lengkap');
+    if(/^[\d.]/.test(x)) return parseFloat(x);
+    if(x==='('){ const v=expression(); if(next()!==')') throw new Error('Kurung tidak seimbang'); return v; }
+    if(x==='π') return Math.PI;
+    if(x==='e') return Math.E;
+    if(x==='Ans') return ans;
+    if(FN[x]){
+      if(next()!=='(') throw new Error('Fungsi butuh kurung');
+      const v=expression(); if(next()!==')') throw new Error('Kurung tidak seimbang');
+      return FN[x](v);
+    }
+    throw new Error('Simbol tidak dikenal: '+x);
+  }
+  const r=expression();
+  if(p<t.length) throw new Error('Ekspresi tidak valid');
+  return r;
+}
+function fmt(n){
+  if(!isFinite(n)) return n>0?'∞':(n<0?'-∞':'Error');
+  if(Math.abs(n)<1e-12) return '0';
+  let s=parseFloat(n.toPrecision(12));
+  return (Math.abs(s)>=1e12||Math.abs(s)<1e-6)?s.toExponential(6):String(s);
+}
+function calc(){
+  if(!expr) return;
+  try{
+    const r=evaluate(expr);
+    if(Number.isNaN(r)) throw new Error('Hasil tidak terdefinisi');
+    ans=r; resEl.textContent=fmt(r); justEval=true;
+  }catch(e){ resEl.textContent=e.message; }
+}
+
+document.querySelectorAll('[data-i]').forEach(b=>b.addEventListener('click',()=>insert(b.dataset.i)));
+document.getElementById('eq').onclick=calc;
+document.getElementById('ac').onclick=()=>{expr='';resEl.textContent='0';justEval=false;render();};
+document.getElementById('del').onclick=()=>{
+  if(justEval){expr='';justEval=false;}
+  expr=expr.replace(/(asin\(|acos\(|atan\(|sqrt\(|sin\(|cos\(|tan\(|log\(|ln\(|Ans|.)$/,'');
+  render();
+};
+document.getElementById('deg').onclick=()=>{deg=!deg;document.getElementById('angle').textContent=deg?'DEG':'RAD';};
+document.getElementById('neg').onclick=()=>{
+  if(justEval){expr=String(ans);justEval=false;}
+  expr=expr.startsWith('−(')&&expr.endsWith(')')?expr.slice(2,-1):'−('+expr+')'; render();
+};
+document.addEventListener('keydown',e=>{
+  const k=e.key;
+  if(/^[0-9.+()^!%]$/.test(k)) insert(k);
+  else if(k==='*') insert('×');
+  else if(k==='/'){e.preventDefault();insert('÷');}
+  else if(k==='-') insert('−');
+  else if(k==='Enter'||k==='='){e.preventDefault();calc();}
+  else if(k==='Backspace') document.getElementById('del').click();
+  else if(k==='Escape') document.getElementById('ac').click();
+});
+</script>
+</body>
+</html>
